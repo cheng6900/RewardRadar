@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>信用卡權益商家查詢</title>
+<style>
+  :root{
+    --cube: #E08A3E;
+    --cube-bg: #FDF3E7;
+    --cube-border: #F1C48A;
+    --green: #3E9B6F;
+    --green-bg: #EAF6EF;
+    --green-border: #A9DDBF;
+    --ink: #24292E;
+    --sub: #767C82;
+    --line: #E7E6E3;
+    --page-bg: #F7F6F3;
+    --card-bg: #FFFFFF;
+    --shadow: 0 1px 2px rgba(30,30,30,0.04), 0 1px 8px rgba(30,30,30,0.03);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    background: var(--page-bg);
+    color: var(--ink);
+    line-height:1.5;
+  }
+  .wrap{
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 32px 20px 60px;
+  }
+  header.top{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    margin-bottom: 22px;
+  }
+  header.top .icon{
+    font-size: 26px;
+    line-height:1;
+    margin-top:2px;
+  }
+  header.top h1{
+    font-size: 22px;
+    margin:0 0 4px;
+    font-weight:700;
+    letter-spacing: 0.5px;
+  }
+  header.top p{
+    margin:0;
+    color: var(--sub);
+    font-size: 13.5px;
+  }
+
+  .search-box{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background: var(--card-bg);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px 18px;
+    box-shadow: var(--shadow);
+    margin-bottom: 26px;
+  }
+  .search-box svg{ flex-shrink:0; color:var(--sub);}
+  .search-box input{
+    border:none;
+    outline:none;
+    font-size:15px;
+    flex:1;
+    background:transparent;
+    color:var(--ink);
+    font-family:inherit;
+  }
+  .search-box input::placeholder{ color:#B7BABE; }
+
+  .divider{
+    height:1px;
+    background:var(--line);
+    margin: 0 0 24px;
+  }
+
+  /* 模擬工具 */
+  .sim-card{
+    background: var(--card-bg);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding: 20px 22px;
+    box-shadow: var(--shadow);
+    margin-bottom: 22px;
+  }
+  .sim-card h2{
+    font-size:15px;
+    margin:0 0 4px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .sim-card p.desc{
+    margin:0 0 14px;
+    color:var(--sub);
+    font-size:13px;
+  }
+  .sim-row{
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  .sim-row select, .sim-row input{
+    flex:1;
+    min-width: 180px;
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding: 11px 14px;
+    font-size:14px;
+    font-family:inherit;
+    background:var(--card-bg);
+    color:var(--ink);
+    outline:none;
+  }
+  .sim-row select:focus, .sim-row input:focus{
+    border-color:#C9C6BE;
+  }
+  .sim-result{
+    margin-top:14px;
+    font-size:13.5px;
+    padding:12px 14px;
+    border-radius:10px;
+    display:none;
+  }
+  .sim-result.show{ display:block; }
+  .sim-result.hit{ background:var(--green-bg); color:#276B4A; border:1px solid var(--green-border); }
+  .sim-result.miss{ background:#FBEAEA; color:#A33A3A; border:1px solid #F0BEBE; }
+
+  /* 搜尋結果 */
+  #results{ margin-bottom: 8px; }
+  .result-item{
+    background:var(--card-bg);
+    border:1px solid var(--line);
+    border-left: 4px solid var(--cube);
+    border-radius:12px;
+    padding:14px 16px;
+    margin-bottom:10px;
+    box-shadow: var(--shadow);
+  }
+  .result-item.green{ border-left-color: var(--green); }
+  .result-item .merchant-name{
+    font-weight:700;
+    font-size:15px;
+    margin-bottom:4px;
+  }
+  .result-item .meta{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:8px;
+    font-size:12.5px;
+    color:var(--sub);
+    margin-bottom:4px;
+  }
+  .tag{
+    display:inline-block;
+    padding:2px 10px;
+    border-radius:999px;
+    font-size:11.5px;
+    font-weight:700;
+  }
+  .tag.cube{ background:var(--cube-bg); color:var(--cube); border:1px solid var(--cube-border);}
+  .tag.green{ background:var(--green-bg); color:var(--green); border:1px solid var(--green-border);}
+  .rate{
+    font-weight:700;
+    color: var(--cube);
+  }
+  .result-item.green .rate{ color: var(--green); }
+  .result-item .note{
+    font-size:12px;
+    color:#98999B;
+    margin-top:4px;
+  }
+  .no-result{
+    text-align:center;
+    color:var(--sub);
+    font-size:14px;
+    padding: 40px 20px;
+    background:var(--card-bg);
+    border:1px dashed var(--line);
+    border-radius:14px;
+  }
+
+  /* 方案卡片(accordion) */
+  .plan-card{
+    background:var(--card-bg);
+    border:1px solid var(--cube-border);
+    border-radius:14px;
+    margin-bottom:12px;
+    box-shadow: var(--shadow);
+    overflow:hidden;
+  }
+  .plan-card.green{ border-color:var(--green-border); }
+  .plan-header{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:16px 18px;
+    cursor:pointer;
+    user-select:none;
+  }
+  .plan-header .plan-name{
+    font-weight:700;
+    font-size:15.5px;
+  }
+  .plan-header .plan-rate{
+    color:var(--cube);
+    font-weight:700;
+    font-size:14px;
+  }
+  .plan-card.green .plan-rate{ color:var(--green); }
+  .plan-header .plan-period{
+    color:var(--sub);
+    font-size:12.5px;
+    margin-left:auto;
+    margin-right:8px;
+    white-space:nowrap;
+  }
+  .plan-header .chev{
+    transition: transform 0.2s ease;
+    color:var(--sub);
+    flex-shrink:0;
+  }
+  .plan-card.open .chev{ transform: rotate(180deg); }
+  .plan-body{
+    max-height:0;
+    overflow:hidden;
+    transition: max-height 0.25s ease;
+    border-top:1px solid var(--line);
+  }
+  .plan-card.open .plan-body{ border-top:1px solid var(--line); }
+  .plan-body-inner{ padding: 4px 18px 16px; }
+  .cat-block{
+    padding: 12px 0;
+    border-bottom: 1px dashed var(--line);
+  }
+  .cat-block:last-child{ border-bottom:none; }
+  .cat-title{
+    font-size:13px;
+    font-weight:700;
+    color: var(--ink);
+    margin-bottom:6px;
+  }
+  .cat-merchants{
+    font-size:13px;
+    color:#4A4E52;
+    line-height:1.7;
+  }
+  .cat-note{
+    font-size:11.5px;
+    color:#98999B;
+    margin-top:6px;
+  }
+
+  .tag-cube-inline{ color: var(--cube); font-weight:700;}
+  .tag-green-inline{ color: var(--green); font-weight:700;}
+
+  footer{
+    text-align:center;
+    color:#A9ACAF;
+    font-size:12px;
+    margin-top:30px;
+    line-height:1.7;
+  }
+
+  @media (max-width: 480px){
+    .wrap{ padding: 20px 14px 40px; }
+    header.top h1{ font-size:19px; }
+    .plan-header .plan-period{ display:none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="icon">💳</div>
+    <div>
+      <h1>信用卡權益商家查詢</h1>
+      <p>查詢 CUBE卡 / Green卡 適用店家與回饋方案</p>
+    </div>
+  </header>
+
+  <div class="search-box">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+    <input type="text" id="searchInput" placeholder="輸入店家名稱，例如：星巴克、全聯、迪士尼">
+  </div>
+
+  <div id="searchResultsArea" style="display:none;">
+    <div id="results"></div>
+  </div>
+
+  <div id="browseArea">
+    <div class="sim-card">
+      <h2>✨ 切換方案模擬計算</h2>
+      <p class="desc">選擇目前信用卡設定的方案，輸入店家名稱看看是否適用</p>
+      <div class="sim-row">
+        <select id="simPlanSelect"><option value="">選擇目前設定方案</option></select>
+        <input type="text" id="simMerchantInput" placeholder="輸入店家名稱">
+      </div>
+      <div class="sim-result" id="simResult"></div>
+    </div>
+
+    <div id="plansContainer"></div>
+  </div>
+
+  <footer>
+    資料僅供參考，實際回饋依刷卡當下設定之方案及銀行公告為準，請以 App 或官網最新資訊為主。
+  </footer>
+</div>
+
+<script>
+// ===================== 資料 =====================
+const DATA = [
+  {card:"CUBE卡", plan:"台塑家", planPeriod:"2026/6/1~2026/12/31", rewardRate:"2%", categories:[
+    {category:"加油站", merchants:["台塑石油加油站","台亞加油站","福懋加油站","統一速邁樂(限本島)加油站"], note:"限實體CUBE信用卡或綁定Apple Pay/Samsung Pay/Google Pay/台塑石油Pay/Garmin Pay，排除網路交易、儲值卡、電子支付及第三方支付綁卡掃碼付款"},
+    {category:"健康生活", merchants:["台塑生醫實體門市","長庚生技實體門市","台塑蔬菜實體門市","台塑購物網"], note:"回饋以刷卡簽單特約商店名稱認定，非以發票商家名稱為準"},
+    {category:"指定超商", merchants:["7-ELEVEN(7-11)實體門市","全家便利商店實體門市","萊爾富實體門市"], note:""}
+  ]},
+  {card:"CUBE卡", plan:"全支付", planPeriod:"2026/4/22~2026/12/31", rewardRate:"2%", categories:[
+    {category:"量販超市", merchants:["全聯福利中心","大全聯"], note:"需選定「全支付」方案並以全支付綁定CUBE信用卡刷卡消費"},
+    {category:"全支付國內合作通路", merchants:["全支付國內合作通路（一般消費）"], note:"不含刷卡繳稅、繳費、跨境支付、儲值、公益捐款、乘車碼、菸酒、代收代售、一歲以下嬰兒奶粉、禮券等"}
+  ]},
+  {card:"CUBE卡", plan:"玩數位", planPeriod:"2026/1/1~2026/12/31", rewardRate:"3%", categories:[
+    {category:"AI工具", merchants:["ChatGPT","Canva","Claude","Cursor","Duolingo","Gamma","Gemini","Notion","Perplexity","Speak"]},
+    {category:"數位/串流平台", merchants:["Apple媒體服務","Google Play","Disney+","Netflix","Spotify","YouTube Premium","Max"]},
+    {category:"網購平台", merchants:["蝦皮購物","momo購物網","PChome 24h購物(不含儲值及電子票券)","小樹購(不含電子票券)"]},
+    {category:"國際電商", merchants:["Coupang酷澎(台灣)","淘寶/天貓"]}
+  ]},
+  {card:"CUBE卡", plan:"樂饗購", planPeriod:"2026/1/1~2026/12/31", rewardRate:"3%", categories:[
+    {category:"國內指定百貨", merchants:["遠東SOGO百貨","遠東Garden City","新光三越","遠東百貨","台北101","BELLAVITA","微風廣場","統一時代台北店(不含DREAM PLAZA)","誠品生活","ATT 4 FUN","京站","美麗華","NOKE忠泰樂生活","大葉高島屋","Mitsui Shopping Park LaLaport(南港、台中)","宏匯廣場","台茂購物中心","大江國際購物中心","Big City遠東巨城購物中心","中友百貨","廣三SOGO","南紡購物中心","耐斯廣場","夢時代","漢神百貨","漢神巨蛋","新月廣場","CITYLINK","秀泰生活","環球購物中心","太平洋百貨","華泰名品城","SKM Park","三井MITSUI OUTLET PARK(林口、台中港、台南)"], note:"以刷卡簽單特店名稱認定，不含店中櫃（如無印良品、UNIQLO、GU、Gap、H&M、ZARA、lululemon等）"},
+    {category:"國內外送平台", merchants:["Uber Eats","foodpanda（熊貓）"]},
+    {category:"國內餐飲", merchants:["連鎖速食-麥當勞", "國內餐飲(不含餐券)"], note:"本活動回饋適用範圍涵蓋透過聯合信用卡中心小額支付平台收費之餐廳，如：拉亞漢堡、Arabica咖啡、黑沃咖啡、SUBWAY、50嵐、麻古茶坊、六扇門時尚湯鍋、八方雲集。"},
+    {category:"國內藥妝", merchants:["康是美","屈臣氏"]}
+  ]},
+  {card:"CUBE卡", plan:"趣旅行", planPeriod:"2026/1/1~2026/12/31", rewardRate:"3%", categories:[
+    {category:"指定海外消費", merchants:["海外實體消費（含國外餐飲、飯店到店付款等）"]},
+    {category:"日本指定遊樂園", merchants:["東京迪士尼樂園","東京華納兄弟哈利波特影城","大阪環球影城(USJ)"]},
+    {category:"指定國內外交通", merchants:["Apple錢包指定交通卡(SUICA)","Apple錢包指定交通卡(PASMO)","Apple錢包指定交通卡(ICOCA)","Uber","Grab","台灣高鐵","yoxi","台灣大車隊","iRent","和運租車","格上租車"], note:"國內交通僅限短程叫車服務，不含長租車、機場接送、代駕服務、企業長租、訂閱租賃、中古車租賃"},
+    {category:"指定航空公司", merchants:["中華航空","長榮航空","星宇航空","台灣虎航","國泰航空","樂桃航空","阿聯酋航空","酷航","捷星航空","日本航空","ANA全日空","亞洲航空","聯合航空","新加坡航空","越捷航空","大韓航空","達美航空","土耳其航空","卡達航空","法國航空"], note:"限航空公司臨櫃/官網/APP購票，不含旅行社、線上旅遊平台，不含機上免稅品、貴賓室、哩程兌換等"},
+    {category:"指定飯店住宿", merchants:["星野集團","全球迪士尼飯店","東橫INN"], note:"限直接於飯店官網/臨櫃刷卡付款訂房，符合住宿相關MCC碼(3500~3999、7011、7012、7032、7033)"},
+    {category:"指定旅遊/訂房平台", merchants:["KKday","Klook","Agoda","Airbnb","Booking.com","Trip.com","ezTravel易遊網"]},
+    {category:"指定旅行社", merchants:["雄獅旅遊","可樂旅遊","東南旅遊","五福旅遊","燦星旅遊","山富旅遊","長汎假期","鳳凰旅行社","EzFy易飛網","理想旅遊","永利旅行社","三賀旅行社"], note:"限直營門市，不含加盟店、旗下子公司"}
+  ]},
+  {card:"CUBE卡", plan:"集精選", planPeriod:"2026/1/1~2026/12/31", rewardRate:"2%", categories:[
+    {category:"充電站", merchants:["U-POWER","EVOASIS","EVALUE","TAIL","iCharging","車麻吉(不含加油、充電)"], note:"包含指定商戶透過綠界、藍新支付平台之交易"},
+    {category:"停車費", merchants:["uTagGo(不含月租停車)"]},
+    {category:"量販超市", merchants:["家樂福","LOPIA台灣","全聯福利中心實體門市(不含大全聯)"]},
+    {category:"指定加油", merchants:["台灣中油-直營站"]},
+    {category:"指定超商", merchants:["7-ELEVEN(7-11)實體門市","全家便利商店實體門市"]},
+    {category:"生活家居", merchants:["IKEA宜家家居"]}
+  ]},
+  {card:"CUBE卡", plan:"慶生月", planPeriod:"2026/7/1~2026/9/30", rewardRate:"3.5% / 10%", categories:[
+    {category:"台中美食(10%)", merchants:["火火燒肉販賣所","澄居烤物燒肉","鳥苑 Torien Yakitori","豐生茶館梅川東店","做茶菜 Sozai","稻鎮經典台灣菜所SUO","嵩sung","JAI宅"]},
+    {category:"中西日料理/微醺餐食(10%)", merchants:["Another Eatery","The other Eatery中山小酒館","輝室","鯡魚工作室","三點三","粥起粥底火鍋熱炒","你家樓下","銀杏中餐廳","Ashin阿鑫","京丘炭火燒鳥專門店","京丘燒鳥酒処","燒鳩","朧板前燒肉","久碳吉炭火燒肉","小方舟串燒酒場","毛丼丼飯專門店","毛房蔥柚鍋．冷藏肉專門","毛蔬亞洲蔬食"]},
+    {category:"在地當季食材餐廳(10%)", merchants:["KOMBOI","好嶼HOSU","肉料理福","澀Sur"]},
+    {category:"連鎖燒肉鍋物甜點(10%)", merchants:["UNCLE SHAWN燒肉餐酒館","竣師父牛肉麵","UNCLE RAY串燒·牛飲·咖喱","陳阿姨火鍋灶咖","蜀叔麻辣鍋","Pastaio","Pastaio noodle cafe","青沐","芮秋Rachel","立秋Li Chiu","祇園.禪院壽喜燒","二本松涮涮屋","橋山壽喜燒","春囍打邊爐","有你真好湘菜沙龍","水鳥和洋創作料理","髙GAO Taipei","法國的秘密甜點","creammm.t","AUFGLET","Fake Sober","Sober Bakery","Sober & Burger"]},
+    {category:"日本指定樂園及遊戲娛樂(10%)", merchants:["東京迪士尼樂園","大阪環球影城(USJ)","PlayStation","Nintendo","巴哈姆特動畫瘋"]},
+    {category:"音樂與歌聲(10%)", merchants:["錢櫃KTV","好樂迪KTV","星聚點KTV","享溫馨KTV"]},
+    {category:"購物生活(3.5%)", merchants:["新光三越(不含SKM Park Outlets高雄草衙)","Uber Eats","Klook","FunNow"]}
+  ]},
+  {card:"CUBE卡", plan:"童樂匯", planPeriod:"2026/7/1~2026/12/31", rewardRate:"1% / 5% / 10%", categories:[
+    {category:"保費(1%)", merchants:["國內各大壽險公司保費","國內各大產險公司保費"]},
+    {category:"指定私校學費(1%)", merchants:["台北美國學校","台北歐洲學校","台北市私立道明外僑學校","馬禮遜學校","康乃薾美國學校","台北私立立人國際國小","康橋國際學校","華盛頓小學","復興實驗高中","維多利亞雙語中小學","高雄美國學校"]},
+    {category:"親子餐廳(5%)", merchants:["台灣壽司郎","雞湯大叔","陶板屋(限使用王品瘋Pay結帳)","YAYOI彌生軒(限街邊店)","大戶屋","甲蟲秘境","大樹先生的家","Money Jump","媽妳講親子餐廳","小島3.5度親子餐廳"]},
+    {category:"親子育樂(5%)", merchants:["Klook","東京迪士尼樂園","大阪環球影城(USJ)","麗寶樂園","六福村主題樂園","九族文化村","劍湖山世界主題樂園","義大遊樂世界","小叮噹科學園區主題樂園","Xpark","巧虎夢想樂園"]},
+    {category:"親子飯店(5%)", merchants:["台北喜來登大飯店","蘭城晶英酒店","台南晶英酒店","礁溪寒沐酒店","大溪笠復威斯汀度假酒店","煙波大飯店新竹湖濱館","麗寶福容大飯店","雲品溫泉酒店","和逸飯店(台南西門館、桃園館)","義大皇家酒店","高雄萬豪酒店","墾丁凱撒大飯店","花蓮遠雄悅來大飯店","瑞穗天合國際觀光酒店","六福莊","宜蘭礁溪鳳凰酒店","桃園名人堂花園大飯店"]},
+    {category:"母嬰用品店(5%)", merchants:["卡多摩嬰童館","媽咪愛","樂兒屋","寶齡婦幼館/步步樂BuBuLuv","安琪兒婦嬰百貨","宜兒樂","麗兒采家","Taobaby濤寶日記","俏媽咪","媽媽好"]},
+    {category:"五感體驗課(10%)", merchants:["朱宗慶打擊樂教學系統","雲門舞集舞蹈教室","Yamaha音樂教室","TutorABC Junior","Etalking Kids","iSKI滑雪俱樂部","汐游寶寶/風城游汐谷"]},
+    {category:"嬰幼童品牌官網(10%)", merchants:["10mois台灣官網","Mamas&Papas台灣官網","古北町台灣官網","Little Wonders台灣官網","Seahorse Originals台灣官網"]}
+  ]},
+  {card:"Green卡", plan:"Green卡通路權益", planPeriod:"2026/7/1~2026/12/31", rewardRate:"最高5%（詳見官網）",categories:[
+    {category:"Green 食", merchants:["星巴克","路易莎咖啡","藏壽司","摩斯漢堡","築間幸福鍋物","義美食品","馬可先生麵包坊","miacucina","小小樹食","陽明春天","屋馬餐廳","熱浪島南洋蔬食茶堂","草蔬宴義式蔬食","原素食府","三個傻瓜印度蔬食餐廳","東風新意餐廳","養心茶樓","山海樓","農人餐桌","Q burger","麥味登","一之軒"]},
+    {category:"Green 宿", merchants:["捷絲旅","台北晶華飯店","北投/礁溪晶泉丰旅","蘭城/台南/太魯閣晶英酒店","承億酒店/文旅","煙波大飯店","翰品酒店","希爾頓酒店","國賓大飯店","福容大飯店","新驛旅店","兆品酒店","圓山大飯店","城市商旅","遠雄悅來大飯店","凱薩大飯店","老爺酒店"]},
+    {category:"Green 遊", merchants:["新光影城","威秀影城","喜樂時代影城","寬宏售票","KKTIX","年代售票","拓元售票","ChargeSPOT"]},
+    {category:"Green 購", merchants:["全國電子","STUDIO A","Straight A","家樂福(萬家福、樂家康)","愛買","UNIQLO","H&M","ZARA","GU","GAP","NET","O'right歐萊德","AESOP","10/10 hope","Green & Safe","台灣主婦聯盟","里仁","棉花田生機園地","聖德科斯","義美生機","統一生機","綠藤生機","茶籽堂","艾瑪絲AROMASE","長庚生技","大研生醫","營養師輕食","安永鮮物","野菜村有機生活館","無毒的家","無毒農","健康食彩","直接跟農夫買"]},
+    {category:"Green 行", merchants:["iRent","GoSmart","GoShare","Gogoro Network","Wemo Scooter","LINE GO","TESLA充電費","宏碁智通","裕電俥電(YES!來電)","全國特急電","特爾電力","華城EVALUE","SharkParking蝦趴","ZOCHA","BEGIN","EVOASIS充電費用","eMoving","eMoving電池資費","臺北捷運","新北捷運","桃園捷運","臺中捷運","高雄捷運"]},
+    {category:"Green 其他", merchants:["悠遊付","荒野保護協會","社團法人臺灣寶島淨鄉團","財團法人臺灣海洋保育與漁業永續基金會"]}
+  ]}
+];
+
+// 攤平成單一店家清單，方便搜尋
+function flatten(data){
+  const list = [];
+  data.forEach(plan=>{
+    plan.categories.forEach(cat=>{
+      cat.merchants.forEach(m=>{
+        list.push({
+          card: plan.card,
+          plan: plan.plan,
+          planPeriod: plan.planPeriod,
+          category: cat.category,
+          merchant: m,
+          rewardRate: plan.rewardRate,
+          note: cat.note || ""
+        });
+      });
+    });
+  });
+  return list;
+}
+const FLAT = flatten(DATA);
+
+function normalize(str){
+  return str.toLowerCase().replace(/\s|　/g,"");
+}
+
+// 取回饋% 數字做排序 (取最大值)
+function rateNumber(rateStr){
+  if(!rateStr) return 0;
+  const nums = rateStr.match(/[\d.]+/g);
+  if(!nums) return 0;
+  return Math.max(...nums.map(Number));
+}
+
+// ===================== 搜尋 =====================
+const searchInput = document.getElementById("searchInput");
+const searchResultsArea = document.getElementById("searchResultsArea");
+const browseArea = document.getElementById("browseArea");
+const resultsEl = document.getElementById("results");
+
+searchInput.addEventListener("input", ()=>{
+  const q = searchInput.value.trim();
+  if(!q){
+    searchResultsArea.style.display = "none";
+    browseArea.style.display = "block";
+    return;
+  }
+  searchResultsArea.style.display = "block";
+  browseArea.style.display = "none";
+  renderResults(q);
+});
+
+function renderResults(query){
+  const nq = normalize(query);
+  let matches = FLAT.filter(item=> normalize(item.merchant).includes(nq));
+  matches.sort((a,b)=> rateNumber(b.rewardRate) - rateNumber(a.rewardRate));
+
+  if(matches.length === 0){
+    resultsEl.innerHTML = `<div class="no-result">查無此店家，可能不在回饋範圍內，建議以 App 實際交易紀錄為準</div>`;
+    return;
+  }
+
+  resultsEl.innerHTML = matches.map(item=>{
+    const isGreen = item.card === "Green卡";
+    return `
+      <div class="result-item ${isGreen ? 'green':''}">
+        <div class="merchant-name">${escapeHtml(item.merchant)}</div>
+        <div class="meta">
+          <span class="tag ${isGreen?'green':'cube'}">${item.card}</span>
+          <span>${escapeHtml(item.plan)}</span>
+          <span>·</span>
+          <span>${escapeHtml(item.category)}</span>
+          ${item.planPeriod ? `<span>·</span><span>${item.planPeriod}</span>` : ""}
+          <span class="rate">${item.rewardRate || "請見方案說明"}</span>
+        </div>
+        ${item.note ? `<div class="note">⚠ ${escapeHtml(item.note)}</div>` : ""}
+      </div>
+    `;
+  }).join("");
+}
+
+function escapeHtml(str){
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ===================== 方案瀏覽 (accordion) =====================
+const plansContainer = document.getElementById("plansContainer");
+
+function renderPlans(){
+  plansContainer.innerHTML = DATA.map((plan, idx)=>{
+    const isGreen = plan.card === "Green卡";
+    const catsHtml = plan.categories.map(cat=>{
+      return `
+        <div class="cat-block">
+          <div class="cat-title">${escapeHtml(cat.category)}</div>
+          <div class="cat-merchants">${cat.merchants.map(escapeHtml).join("、")}</div>
+          ${cat.note ? `<div class="cat-note">⚠ ${escapeHtml(cat.note)}</div>` : ""}
+        </div>
+      `;
+    }).join("");
+
+    return `
+      <div class="plan-card ${isGreen?'green':''}" id="plan-${idx}">
+        <div class="plan-header" onclick="togglePlan(${idx})">
+          <span class="tag ${isGreen?'green':'cube'}">${plan.card}</span>
+          <span class="plan-name">${escapeHtml(plan.plan)}</span>
+          <span class="plan-rate">${plan.rewardRate || ""}</span>
+          <span class="plan-period">${plan.planPeriod || ""}</span>
+          <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+        <div class="plan-body">
+          <div class="plan-body-inner">${catsHtml}</div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function togglePlan(idx){
+  const card = document.getElementById(`plan-${idx}`);
+  const body = card.querySelector(".plan-body");
+  const isOpen = card.classList.contains("open");
+  if(isOpen){
+    card.classList.remove("open");
+    body.style.maxHeight = null;
+  } else {
+    card.classList.add("open");
+    body.style.maxHeight = body.scrollHeight + "px";
+  }
+}
+
+renderPlans();
+
+// ===================== 切換方案模擬計算 =====================
+const simPlanSelect = document.getElementById("simPlanSelect");
+const simMerchantInput = document.getElementById("simMerchantInput");
+const simResult = document.getElementById("simResult");
+
+DATA.forEach((plan, idx)=>{
+  const opt = document.createElement("option");
+  opt.value = idx;
+  opt.textContent = `${plan.card} - ${plan.plan}`;
+  simPlanSelect.appendChild(opt);
+});
+
+function runSimulation(){
+  const planIdx = simPlanSelect.value;
+  const merchantQuery = simMerchantInput.value.trim();
+  if(planIdx === "" || !merchantQuery){
+    simResult.className = "sim-result";
+    return;
+  }
+  const plan = DATA[planIdx];
+  const nq = normalize(merchantQuery);
+  let found = null;
+  for(const cat of plan.categories){
+    for(const m of cat.merchants){
+      if(normalize(m).includes(nq)){
+        found = {category: cat.category, merchant: m, note: cat.note};
+        break;
+      }
+    }
+    if(found) break;
+  }
+  if(found){
+    simResult.className = "sim-result show hit";
+    simResult.innerHTML = `✅ 目前方案「${escapeHtml(plan.plan)}」<b>有回饋</b>！屬於「${escapeHtml(found.category)}」分類，回饋率 ${plan.rewardRate || "請見方案說明"}。${found.note ? `<br>⚠ ${escapeHtml(found.note)}`:""}`;
+  } else {
+    // 檢查是否在其他方案有回饋
+    let otherPlan = null;
+    for(const p of DATA){
+      if(p.plan === plan.plan) continue;
+      for(const cat of p.categories){
+        if(cat.merchants.some(m=>normalize(m).includes(nq))){
+          otherPlan = p.plan;
+          break;
+        }
+      }
+      if(otherPlan) break;
+    }
+    simResult.className = "sim-result show miss";
+    simResult.innerHTML = otherPlan
+      ? `❌ 目前方案「${escapeHtml(plan.plan)}」<b>沒有回饋</b>，此店家回饋在「${escapeHtml(otherPlan)}」方案，建議切換方案再消費。`
+      : `❌ 目前方案「${escapeHtml(plan.plan)}」<b>沒有回饋</b>，且此店家未列於任何回饋方案中。`;
+  }
+}
+
+simPlanSelect.addEventListener("change", runSimulation);
+simMerchantInput.addEventListener("input", runSimulation);
+</script>
+</body>
+</html>
